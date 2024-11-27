@@ -22,7 +22,7 @@ def display_kanji(
 
 
 def main():
-    device = sh1106(width=520, height=520)
+    device = sh1106(width=128, height=128)
     assert device, "Device not found"
 
     cols = device.width
