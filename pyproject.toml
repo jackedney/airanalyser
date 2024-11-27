@@ -1,0 +1,25 @@
+[project]
+name = "piairqual"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "ipython>=8.29.0",
+    "luma-oled",
+    "pimoroni-sgp30>=0.0.2",
+    "scd4x>=0.0.2",
+]
+
+[dependency-groups]
+main = [
+    "sensirion-i2c-scd",
+]
+test = [
+    "pytest>=6.2.5",
+    "sensirion-i2c-scd[test]",
+]
+
+[tool.uv.sources]
+sensirion-i2c-scd = { git = "https://github.com/Sensirion/python-i2c-scd.git" }
+luma-oled = { git = "https://github.com/rm-hull/luma.oled.git" }
