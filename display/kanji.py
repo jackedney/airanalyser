@@ -10,14 +10,14 @@ def display_kanji(
     kanji = kanji[0]
     pil_font = ImageFont.truetype(FONT_PATH, size=font_size, encoding="unic")
     text_width, text_height = pil_font.getbbox(kanji)[2:]
-    im_canvas = Image.new("RGB", [font_size, font_size], (255, 255, 255))
+    im_canvas = Image.new("1", [font_size, font_size], 1)
 
     draw = ImageDraw.Draw(im_canvas)
     offset = ((font_size - text_width) // 2, (font_size - text_height) // 2)
-    white = "#000000"
+    white = 0
     draw.text(offset, kanji, font=pil_font, fill=white)
 
-    im_canvas.resize((image_width, image_height), Image.Resampling.LANCZOS)
+    im_canvas = im_canvas.resize((image_width, image_height), Image.Resampling.LANCZOS)
     return im_canvas
 
 
@@ -25,12 +25,11 @@ def main():
     device = sh1106(width=128, height=128, rotate=2, mode="1")
     assert device, "Device not found"
 
-    cols = device.width
-    rows = device.height
-
     while True:
         kanji = input("Enter Kanji:")
-        kanji_image = display_kanji(kanji, 25, cols, rows)
+        kanji_image = display_kanji(kanji, 128, device.width, device.height)
+        print(kanji_image.size)
+        print(device.size)
         device.display(kanji_image)
 
 
