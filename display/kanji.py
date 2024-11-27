@@ -1,5 +1,5 @@
-from display.demo_opts import get_device
 from PIL import Image, ImageDraw, ImageFont
+from luma.oled.device import sh1106
 
 FONT_PATH = "display/hkhigerei/hkhigerei.ttf"
 
@@ -22,7 +22,7 @@ def display_kanji(
 
 
 def main():
-    device = get_device()
+    device = sh1106(width=520, height=520)
     assert device, "Device not found"
 
     cols = device.width
