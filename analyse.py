@@ -5,6 +5,7 @@ from typing import NamedTuple
 from datetime import datetime
 from sgp30 import SGP30
 from scd4x import SCD4X
+from luma.oled.device import sh1106
 
 
 class AirQualityReading(NamedTuple):
@@ -21,14 +22,13 @@ class AirQualityReading(NamedTuple):
 class AirQualityMonitor:
     """Main class for monitoring air quality using SGP30 and SCD41 sensors"""
 
-    def __init__(self, display_device, update_interval=1.0):
+    def __init__(self, update_interval=1.0):
         """Initialize sensors and display
 
         Args:
-            display_device: Display device from luma.core
             update_interval: How often to update readings in seconds
         """
-        self.display = display_device
+        self.display = sh1106(width=128, height=128, i2c_port=1, rotate=2)
         self.update_interval = update_interval
         self.reading_lock = Lock()
         self.latest_reading = None
@@ -169,23 +169,9 @@ class AirQualityMonitor:
         return int(abs_humidity * 256)
 
 
-def create_monitor(display_device=None):
-    """Factory function to create and configure a new monitor instance
-
-    If no display device is provided, attempts to create one using
-    demo settings from luma.core
-    """
-    if display_device is None:
-        from display.demo_opts import get_device
-
-        display_device = get_device()
-
-    return AirQualityMonitor(display_device)
-
-
 if __name__ == "__main__":
     try:
-        monitor = create_monitor()
+        monitor = AirQualityMonitor()
         monitor.start()
 
         # Keep main thread alive with status updates
