@@ -75,7 +75,7 @@ class AirQualityMonitor:
 
                 # Update humidity compensation on SGP30
                 abs_humidity = self._calculate_absolute_humidity(temp, humidity)
-                self.sgp30.command("set_humidity", abs_humidity)
+                self.sgp30.command("set_humidity", [abs_humidity])
 
                 # Create new reading with lock
                 with self.reading_lock:
