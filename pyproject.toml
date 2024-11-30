@@ -5,12 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "fire>=0.7.0",
     "ipython>=8.29.0",
     "luma-oled",
     "matplotlib>=3.9.2",
     "pimoroni-sgp30>=0.0.2",
     "pms5003>=1.0.1",
     "scd4x>=0.0.2",
+    "seaborn>=0.13.2",
 ]
 
 [dependency-groups]
