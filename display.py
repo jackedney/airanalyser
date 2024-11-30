@@ -1,86 +1,147 @@
-import fire
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from typing import Literal
+from PIL import Image, ImageDraw, ImageFont
+from datetime import datetime
+import time
 
 
-def plot_environmental_data(
-    csv_path: str,
-    output_path: str | None = None,
-    style: Literal["darkgrid", "whitegrid", "dark", "white", "ticks"] = "whitegrid",
-    color_palette: str = "husl",
-    dpi: int = 300,
-):
-    """
-    Create environmental data plots from CSV and optionally save to file.
-    """
-    sns.set_theme(style=style)
-    sns.set_palette(color_palette)
+class DisplayManager:
+    def __init__(self, device):
+        self.device = device
+        self.indicators = {
+            "co2": {
+                "min": 400,
+                "max": 2000,
+                "optimal": (400, 1000),
+                "warning": (1000, 1500),
+                "unit": "PPM",
+                "name": "CO2",
+            },
+            "tvoc": {
+                "min": 0,
+                "max": 1000,
+                "optimal": (0, 300),
+                "warning": (300, 600),
+                "unit": "PPB",
+                "name": "TVOC",
+            },
+            "pm2.5": {
+                "min": 0,
+                "max": 50,
+                "optimal": (0, 12),
+                "warning": (12, 35),
+                "unit": "UG/M3",
+                "name": "PM2.5",
+            },
+        }
 
-    df = pd.read_csv(csv_path)
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
+        try:
+            self.font = ImageFont.truetype(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 16
+            )
+            self.small_font = ImageFont.truetype(
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12
+            )
+        except Exception:
+            self.font = ImageFont.load_default()
+            self.small_font = ImageFont.load_default()
 
-    fig = plt.figure(figsize=(15, 10), dpi=dpi)
-    gs = fig.add_gridspec(2, 1, height_ratios=[1, 1], hspace=0.3)
+    def _draw_vertical_gauge(
+        self,
+        draw: ImageDraw.ImageDraw,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        value: float,
+        indicator_type: str,
+    ) -> None:
+        """Draw a vertical gauge with markers for optimal and warning ranges"""
+        ranges = self.indicators[indicator_type]
+        min_val = ranges["min"]
+        max_val = ranges["max"]
 
-    ax1 = fig.add_subplot(gs[0])
-    line1 = ax1.plot(
-        df["timestamp"], df["temperature"], linewidth=2, label="Temperature (°C)"
-    )
-    ax1.fill_between(df["timestamp"], df["temperature"], alpha=0.2)
+        # Normalize value to gauge height (bottom to top)
+        def normalize(val):
+            return height - ((val - min_val) / (max_val - min_val)) * height
 
-    ax1_twin = ax1.twinx()
-    line2 = ax1_twin.plot(
-        df["timestamp"],
-        df["humidity"],
-        linewidth=2,
-        label="Humidity (%)",
-        color="#2ecc71",
-    )
-    ax1_twin.fill_between(df["timestamp"], df["humidity"], alpha=0.1, color="#2ecc71")
+        # Draw base gauge line
+        draw.rectangle(
+            (x + width // 2 - 1, y, x + width // 2 + 1, y + height), outline=1, fill=1
+        )
 
-    ax1.set_title("Temperature & Humidity Over Time", fontsize=16, pad=20)
-    ax1.set_xlabel("Time", fontsize=12)
-    ax1.set_ylabel("Temperature (°C)", fontsize=12, color=line1[0].get_color())
-    ax1_twin.set_ylabel("Humidity (%)", fontsize=12, color=line2[0].get_color())
+        # Draw optimal range
+        opt_start = normalize(ranges["optimal"][1])
+        opt_end = normalize(ranges["optimal"][0])
+        draw.rectangle((x, opt_start, x + width, opt_end), outline=1)
 
-    lines = line1 + line2
-    ax1.legend(
-        lines,
-        [str(line.get_label()) for line in lines],
-        loc="upper left",
-        frameon=True,
-        fancybox=True,
-        shadow=True,
-    )
+        # Draw warning range
+        warn_start = normalize(ranges["warning"][1])
+        warn_end = normalize(ranges["warning"][0])
+        draw.rectangle((x, warn_start, x + width, warn_end), outline=1)
 
-    ax2 = fig.add_subplot(gs[1])
-    colors = ["#e74c3c", "#3498db", "#f1c40f"]
-    for data, label, color in zip(
-        [df["co2"], df["tvoc"], df["eco2"]], ["CO₂ (ppm)", "TVOC (ppb)", "eCO₂"], colors
-    ):
-        ax2.plot(df["timestamp"], data, linewidth=2, label=label, color=color)
-        ax2.fill_between(df["timestamp"], data, alpha=0.1, color=color)
+        # Draw current value marker (triangle pointing left)
+        pos = normalize(min(max(value, min_val), max_val))
+        draw.polygon(
+            [(x + width + 4, pos), (x + width, pos - 4), (x + width, pos + 4)], fill=1
+        )
 
-    ax2.set_title("Air Quality Metrics Over Time", fontsize=16, pad=20)
-    ax2.set_xlabel("Time", fontsize=12)
-    ax2.set_ylabel("Value", fontsize=12)
-    ax2.legend(loc="upper left", frameon=True, fancybox=True, shadow=True)
+        # Draw value text to the right
+        value_text = f"{int(value)}"
+        draw.text((x + width + 10, pos - 8), value_text, font=self.font, fill=1)
+        draw.text(
+            (x + width + 10, pos + 4), ranges["unit"], font=self.small_font, fill=1
+        )
 
-    for ax in [ax1, ax2]:
-        ax.grid(True, alpha=0.3)
-        ax.tick_params(axis="x", rotation=45)
+        # Draw label
+        name_w = draw.textlength(ranges["name"], font=self.font)
+        draw.text(
+            (x + (width - name_w) // 2, y - 20), ranges["name"], font=self.font, fill=1
+        )
 
-    fig.patch.set_facecolor("#f8f9fa")
-    fig.suptitle("Environmental Monitoring Dashboard", fontsize=20, y=1.02)
+    def _draw_top_stats(self, draw: ImageDraw.ImageDraw, reading) -> None:
+        """Draw the constant top stats (temp, humidity, time) in white"""
+        # Temperature on left
+        temp_str = f"{reading.temperature:.1f}C"
+        draw.text((2, 2), temp_str, font=self.small_font, fill=1)
 
-    if output_path:
-        plt.savefig(output_path, bbox_inches="tight", dpi=dpi)
-        print(f"Plot saved to {output_path}")
-    else:
-        plt.show()
+        # Time in center
+        time_str = datetime.fromtimestamp(reading.timestamp).strftime("%H:%M")
+        time_w = draw.textlength(time_str, font=self.small_font)
+        draw.text((64 - time_w / 2, 2), time_str, font=self.small_font, fill=1)
 
+        # Humidity on right
+        humid_str = f"{reading.humidity:.0f}%"
+        humid_w = draw.textlength(humid_str, font=self.small_font)
+        draw.text((126 - humid_w, 2), humid_str, font=self.small_font, fill=1)
 
-if __name__ == "__main__":
-    fire.Fire(plot_environmental_data)
+    def update(self, reading) -> None:
+        """Update the display with new readings"""
+        page = int(time.time() / 4) % 3  # Rotate between 3 pages every 4 seconds
+
+        image = Image.new("1", (self.device.width, self.device.height), 0)
+        draw = ImageDraw.Draw(image)
+
+        # Draw stats at top
+        self._draw_top_stats(draw, reading)
+
+        # Calculate vertical gauge positioning
+        gauge_height = 80  # Taller gauge
+        gauge_width = 20  # Narrower for vertical orientation
+        gauge_x = 20  # More space for value text on right
+        gauge_y = 30  # Below top stats
+
+        # Draw the appropriate gauge based on current page
+        if page == 0:
+            self._draw_vertical_gauge(
+                draw, gauge_x, gauge_y, gauge_width, gauge_height, reading.co2, "co2"
+            )
+        elif page == 1:
+            self._draw_vertical_gauge(
+                draw, gauge_x, gauge_y, gauge_width, gauge_height, reading.tvoc, "tvoc"
+            )
+        else:
+            self._draw_vertical_gauge(
+                draw, gauge_x, gauge_y, gauge_width, gauge_height, reading.pm25, "pm2.5"
+            )
+
+        self.device.display(image)
+
