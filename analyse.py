@@ -197,7 +197,7 @@ class AirQualityMonitor:
         self._draw_progress_bar(draw, 2, 60, 124, min(reading.tvoc, 1000), 1000)
 
     def _update_display(self, reading: AirQualityReading) -> None:
-        page = int(time.time() / 3) % 3
+        page = int(time.time() / 6) % 3
 
         image = Image.new("1", (self.display.width, self.display.height), 0)
         draw = ImageDraw.Draw(image)
@@ -319,11 +319,6 @@ if __name__ == "__main__":
                 print(f"CO2: {reading.co2} ppm")
                 print(f"TVOC: {reading.tvoc} ppb")
                 print(f"eCO2: {reading.eco2} ppm")
-
-                if int(time.time()) % 5 == 0:
-                    fig = create_plots(monitor.history)
-                    plt.draw()
-                    plt.pause(0.1)
 
             time.sleep(1)
 
