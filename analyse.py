@@ -1,7 +1,8 @@
 from PIL import ImageDraw, Image
 import numpy as np
 from threading import Thread
-from typing import NamedTuple, Deque from datetime import datetime
+from typing import NamedTuple, Deque
+from datetime import datetime
 from threading import Lock
 from collections import deque
 from matplotlib.figure import Figure
@@ -10,22 +11,13 @@ import time
 import csv
 
 # Try to import hardware dependencies, fall back to mock implementations for development
-try:
-    from pms5003 import PMS5003
-    from pimoroni_sgp30 import SGP30
-    from scd4x import SCD4X
-    from luma.oled.device import sh1106
-    from luma.core.interface.serial import i2c
+from pms5003 import PMS5003
+from sgp30 import SGP30
+from scd4x import SCD4X
+from luma.oled.device import sh1106
+from luma.core.interface.serial import i2c
 
-    USING_HARDWARE = True
-except ImportError:
-    from dev_utils.mock_sensors import MockPMS5003 as PMS5003
-    from dev_utils.mock_sensors import MockSGP30 as SGP30
-    from dev_utils.mock_sensors import MockSCD4x as SCD4X
-    from dev_utils.mock_display import device, MockI2CInterface as i2c
-
-    sh1106 = device.sh1106
-    USING_HARDWARE = False
+USING_HARDWARE = True
 
 print("Running with", "hardware" if USING_HARDWARE else "mock", "sensors")
 
@@ -116,7 +108,7 @@ class AirQualityMonitor:
     def __init__(self, update_interval: float = 1.0):
         # Initialize display
         try:
-            serial = i2c(port=1, address=0x3C)
+            serial = i2c(port=1)
             self.display = sh1106(
                 serial_interface=serial, width=128, height=64, rotate=0
             )

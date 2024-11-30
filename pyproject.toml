@@ -30,7 +30,3 @@ dev = [
 [tool.uv.sources]
 sensirion-i2c-scd = { git = "https://github.com/Sensirion/python-i2c-scd.git" }
 luma-oled = { git = "https://github.com/rm-hull/luma.oled.git" }
-
-[tool.uv.optional-dependencies]
-hardware = ["piairqual[hardware]"]
-dev = ["piairqual[dev]"]
