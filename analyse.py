@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import csv
+
 from pms5003 import PMS5003
 from sgp30 import SGP30
 from scd4x import SCD4X
@@ -19,6 +20,9 @@ class AirQualityReading(NamedTuple):
     co2: int
     tvoc: int
     eco2: int
+    pm10: float
+    pm25: float
+    pm100: float
     timestamp: float
 
 
@@ -30,6 +34,9 @@ class DataHistory:
         self.co2: Deque[int] = deque(maxlen=max_history)
         self.tvoc: Deque[int] = deque(maxlen=max_history)
         self.eco2: Deque[int] = deque(maxlen=max_history)
+        self.pm10: Deque[float] = deque(maxlen=max_history)
+        self.pm25: Deque[float] = deque(maxlen=max_history)
+        self.pm100: Deque[float] = deque(maxlen=max_history)
         self.timestamps: Deque[float] = deque(maxlen=max_history)
 
         self.csv_file: str = (
@@ -41,7 +48,17 @@ class DataHistory:
         with open(self.csv_file, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(
-                ["timestamp", "temperature", "humidity", "co2", "tvoc", "eco2"]
+                [
+                    "timestamp",
+                    "temperature",
+                    "humidity",
+                    "co2",
+                    "tvoc",
+                    "eco2",
+                    "pm10",
+                    "pm25",
+                    "pm100",
+                ]
             )
 
     def add_reading(self, reading: AirQualityReading) -> None:
@@ -50,6 +67,9 @@ class DataHistory:
         self.co2.append(reading.co2)
         self.tvoc.append(reading.tvoc)
         self.eco2.append(reading.eco2)
+        self.pm10.append(reading.pm10)
+        self.pm25.append(reading.pm25)
+        self.pm100.append(reading.pm100)
         self.timestamps.append(reading.timestamp)
 
         with open(self.csv_file, "a", newline="") as f:
@@ -62,6 +82,9 @@ class DataHistory:
                     reading.co2,
                     reading.tvoc,
                     reading.eco2,
+                    reading.pm10,
+                    reading.pm25,
+                    reading.pm100,
                 ]
             )
 
@@ -186,21 +209,6 @@ class AirQualityMonitor:
 
         self._draw_trend_arrow(draw, 90, 25, reading.co2, self.history.co2)
         self._draw_progress_bar(draw, 2, 60, 124, min(reading.co2, 2000), 2000)
-
-    def _draw_voc(self, draw: ImageDraw.ImageDraw, reading: AirQualityReading) -> None:
-        status = self._get_status(reading.tvoc, "tvoc")
-
-        draw.text((2, 2), "Air Quality", fill=1)
-        draw.text((2, 20), f"TVOC: {reading.tvoc} ppb", fill=1)
-        self._draw_trend_arrow(draw, 90, 25, reading.tvoc, self.history.tvoc)
-
-        if status == "bad":
-            draw.text((2, 40), "VENTILATE!", fill=1)
-
-        draw.text((2, 40), f"eCO₂: {reading.eco2} ppm", fill=1)
-        self._draw_trend_arrow(draw, 90, 45, reading.eco2, self.history.eco2)
-
-        self._draw_progress_bar(draw, 2, 60, 124, min(reading.tvoc, 1000), 1000)
 
     def _draw_voc(self, draw: ImageDraw.ImageDraw, reading: AirQualityReading) -> None:
         status = self._get_status(reading.tvoc, "tvoc")
@@ -340,4 +348,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         monitor.stop()
         print(f"\nMonitoring stopped. Data saved to: {monitor.history.csv_file}")
-
