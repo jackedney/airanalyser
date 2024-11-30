@@ -172,7 +172,7 @@ class AirQualityMonitor:
     def _draw_co2(self, draw: ImageDraw.ImageDraw, reading: AirQualityReading) -> None:
         status = self._get_status(reading.co2, "co2")
 
-        draw.text((2, 2), "CO₂ Levels", fill=1)
+        draw.text((2, 2), "CO2 Levels", fill=1)
         draw.text((2, 20), f"{reading.co2} ppm", fill=1)
 
         if status == "bad":
@@ -191,7 +191,7 @@ class AirQualityMonitor:
         if status == "bad":
             draw.text((2, 40), "VENTILATE!", fill=1)
 
-        draw.text((2, 40), f"eCO₂: {reading.eco2} ppm", fill=1)
+        draw.text((2, 40), f"eCO2: {reading.eco2} ppm", fill=1)
         self._draw_trend_arrow(draw, 90, 45, reading.eco2, self.history.eco2)
 
         self._draw_progress_bar(draw, 2, 60, 124, min(reading.tvoc, 1000), 1000)
@@ -325,4 +325,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         monitor.stop()
         print(f"\nMonitoring stopped. Data saved to: {monitor.history.csv_file}")
-
