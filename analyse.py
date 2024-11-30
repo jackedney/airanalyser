@@ -8,10 +8,20 @@ import numpy as np
 import time
 import csv
 
+"""
 from pms5003 import PMS5003
 from sgp30 import SGP30
 from scd4x import SCD4X
 from luma.oled.device import sh1106
+"""
+
+from dev_utils.mock_sensors import (
+    MockSGP30 as SGP30,
+    MockPMS5003 as PMS5003,
+    MockSCD4x as SCD4X,
+)
+
+from dev_utils.mock_display import MockSH1106 as SH1106
 
 
 class AirQualityReading(NamedTuple):
@@ -91,7 +101,7 @@ class DataHistory:
 
 class AirQualityMonitor:
     def __init__(self, update_interval: float = 1.0) -> None:
-        self.display = sh1106(width=128, height=128, i2c_port=1, rotate=2)
+        self.display = SH1106(width=128, height=128, i2c_port=1, rotate=2)
         self.update_interval: float = update_interval
         self.reading_lock: Lock = Lock()
         self.latest_reading: Optional[AirQualityReading] = None

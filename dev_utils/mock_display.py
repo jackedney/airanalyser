@@ -10,7 +10,7 @@ class MockSH1106:
     Simulates the display by saving the output as PNG files for visual inspection during development.
     """
 
-    def __init__(self, port=0, address=0x3C, width=128, height=64):
+    def __init__(self, port=0, address=0x3C, width=128, height=64, i2c_port=1, rotate=1):
         self.width = width
         self.height = height
         self.address = address
