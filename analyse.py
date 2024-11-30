@@ -3,25 +3,14 @@ from typing import NamedTuple, Deque, Tuple, Dict, Optional
 from datetime import datetime
 from threading import Thread, Lock
 from collections import deque
-import matplotlib.pyplot as plt
 import numpy as np
 import time
 import csv
 
-"""
 from pms5003 import PMS5003
 from sgp30 import SGP30
 from scd4x import SCD4X
 from luma.oled.device import sh1106
-"""
-
-from dev_utils.mock_sensors import (
-    MockSGP30 as SGP30,
-    MockPMS5003 as PMS5003,
-    MockSCD4x as SCD4X,
-)
-
-from dev_utils.mock_display import MockSH1106 as SH1106
 
 
 class AirQualityReading(NamedTuple):
@@ -101,7 +90,7 @@ class DataHistory:
 
 class AirQualityMonitor:
     def __init__(self, update_interval: float = 1.0) -> None:
-        self.display = SH1106(width=128, height=128, i2c_port=1, rotate=2)
+        self.display = sh1106(width=128, height=128, i2c_port=1, rotate=2)
         self.update_interval: float = update_interval
         self.reading_lock: Lock = Lock()
         self.latest_reading: Optional[AirQualityReading] = None
@@ -313,9 +302,9 @@ class AirQualityMonitor:
                     co2=co2,
                     tvoc=air_quality.total_voc,
                     eco2=air_quality.equivalent_co2,
-                    pm10=pms_data.pm_ug_per_m3[0],
-                    pm25=pms_data.pm_ug_per_m3[1],
-                    pm100=pms_data.pm_ug_per_m3[2],
+                    pm10=pms_data.pm_ug_per_m3(1.0),
+                    pm25=pms_data.pm_ug_per_m3(2.5),
+                    pm100=pms_data.pm_ug_per_m3(10),
                     timestamp=timestamp,
                 )
 
@@ -331,30 +320,24 @@ class AirQualityMonitor:
 
 
 if __name__ == "__main__":
-    try:
-        monitor = AirQualityMonitor()
-        monitor.start()
+    monitor = AirQualityMonitor()
+    monitor.start()
 
-        plt.ion()
+    while True:
+        with monitor.reading_lock:
+            reading = monitor.latest_reading
 
-        while True:
-            with monitor.reading_lock:
-                reading = monitor.latest_reading
+        if reading:
+            print("\033[2J\033[H")
+            print(f"Air Quality Monitor - {datetime.fromtimestamp(reading.timestamp)}")
+            print("-" * 50)
+            print(f"Temperature: {reading.temperature:.1f}°C")
+            print(f"Humidity: {reading.humidity:.1f}%")
+            print(f"CO2: {reading.co2} ppm")
+            print(f"TVOC: {reading.tvoc} ppb")
+            print(f"eCO2: {reading.eco2} ppm")
+            print(f"PM1.0: {reading.pm10} µg/m³")
+            print(f"PM2.5: {reading.pm25} µg/m³")
+            print(f"PM10: {reading.pm100} µg/m³")
 
-            if reading:
-                print("\033[2J\033[H")
-                print(
-                    f"Air Quality Monitor - {datetime.fromtimestamp(reading.timestamp)}"
-                )
-                print("-" * 50)
-                print(f"Temperature: {reading.temperature:.1f}°C")
-                print(f"Humidity: {reading.humidity:.1f}%")
-                print(f"CO2: {reading.co2} ppm")
-                print(f"TVOC: {reading.tvoc} ppb")
-                print(f"eCO2: {reading.eco2} ppm")
-
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        monitor.stop()
-        print(f"\nMonitoring stopped. Data saved to: {monitor.history.csv_file}")
+        time.sleep(1)
