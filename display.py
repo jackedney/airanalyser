@@ -44,10 +44,26 @@ class DisplayManager:
             self.font = ImageFont.truetype(MEDIUM_FONT, 16)
             # Smaller font for units and secondary info
             self.small_font = ImageFont.truetype(SMALL_FONT, 12)
+            # Special font for emoticons (same size as values)
+            self.emoji_font = ImageFont.truetype(LARGE_FONT, 36)
         except Exception:
             self.large_font = ImageFont.load_default()
             self.font = ImageFont.load_default()
             self.small_font = ImageFont.load_default()
+            self.emoji_font = ImageFont.load_default()
+
+    def _get_emoticon(self, value: float, indicator_type: str) -> str:
+        """Return appropriate emoticon based on value range"""
+        ranges = self.indicators[indicator_type]
+        optimal_range = ranges["optimal"]
+        warning_range = ranges["warning"]
+        
+        if value <= optimal_range[1]:
+            return "☺"  # White smiling face
+        elif value <= warning_range[1]:
+            return "😐"  # Neutral face
+        else:
+            return "☹"  # White frowning face
 
     def _draw_horizontal_gauge(
         self,
@@ -120,8 +136,18 @@ class DisplayManager:
         # Draw the large value in the center
         value_text = f"{int(value)}"
         value_w = draw.textlength(value_text, font=self.large_font)
-        # Position the large value lower in the display
-        draw.text((64 - value_w / 2, 40), value_text, font=self.large_font, fill=1)
+        
+        # Get emoticon and its width
+        emoticon = self._get_emoticon(value, indicator_type)
+        emoticon_w = draw.textlength(emoticon, font=self.emoji_font)
+        
+        # Calculate total width and positions
+        total_width = value_w + emoticon_w + 5  # 5 pixels spacing
+        start_x = 64 - (total_width / 2)
+        
+        # Draw value and emoticon
+        draw.text((start_x, 40), value_text, font=self.large_font, fill=1)
+        draw.text((start_x + value_w + 5, 40), emoticon, font=self.emoji_font, fill=1)
 
         # Draw the unit below the value
         unit_w = draw.textlength(ranges["unit"], font=self.small_font)
